@@ -1,0 +1,7 @@
+tensor([34.0012], device='cuda:0')
+tensor([4.7500], device='cuda:0')
+tensor([25.9162], device='cuda:0')
+tensor([17.1121], device='cuda:0')
+tensor([13.9441], device='cuda:0')
+tensor([12.5458], device='cuda:0')
+tensor([34.1817], device='cuda:0')

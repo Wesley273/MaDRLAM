@@ -1,10 +1,12 @@
-import matplotlib.pyplot
-import matplotlib.pyplot as plt
 import re
-from Params import configs
+
+import matplotlib.pyplot as plt
 import numpy as np
 
+from Params import configs
+
 """Draw the convergence curve of the model based on the data saved during the training process"""
+
 
 def Draw():
     size = '1000_2000'
@@ -13,7 +15,7 @@ def Draw():
 
     max = 8
 
-    f = open('.//train_vali//{}//compare{}//{}_{}.txt'.format(configs.n_j,compare,configs.n_j,max), 'r')
+    f = open('.//train_vali//{}//compare{}//{}_{}.txt'.format(configs.n_j, compare, configs.n_j, max), 'r')
 
     data = []
 
@@ -49,7 +51,7 @@ def Draw():
 
     plt.xticks(fontproperties='Times New Roman', size=12)
 
-    ax.set_facecolor("whitesmoke")  ##backgrand color
+    ax.set_facecolor("whitesmoke")  # backgrand color
 
     plt.legend(['Loss Function'], prop={'family': 'Times New Roman', 'size': 14})
 
@@ -63,6 +65,5 @@ def Draw():
 
     plt.show()
 
+
 Draw()
-
-

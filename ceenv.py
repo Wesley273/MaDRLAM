@@ -2,13 +2,17 @@ import gym
 import numpy as np
 import torch
 from gym.utils import EzPickle
+
 from Params import configs
+
 if torch.cuda.is_available():
     DEVICE = torch.device('cuda')
 else:
     DEVICE = torch.device('cpu')
 
 """Environment for agent interaction, covering feature extraction and update"""
+
+
 class CLOUD_edge(gym.Env, EzPickle):
     def __init__(self,
                  n_j,
@@ -23,7 +27,7 @@ class CLOUD_edge(gym.Env, EzPickle):
 
         self.step_count = 0
 
-        self.L = 50  ##penalty value
+        self.L = 50  # penalty value
 
         self.number_of_jobs = n_j
 
@@ -31,12 +35,10 @@ class CLOUD_edge(gym.Env, EzPickle):
 
         self.busy_men_on_cloudy = 0
 
-
-    def reset(self, batch,data):
+    def reset(self, batch, data):
         """initialization"""
         self.batch = batch
         self.job_finish_time_on_cloudy = np.zeros(self.batch * self.maxtasks).reshape((self.batch, -1))
-
 
         self.step_count = 0
         # print(self.step_count)
@@ -54,13 +56,13 @@ class CLOUD_edge(gym.Env, EzPickle):
         self.T = np.array(data[1], dtype=np.single)
         # print('####',self.T.dtype)
 
-        ##task feature
+        # task feature
         ##############################################################
-        self.I = np.full(shape=(self.batch,self.n_j,2), fill_value=0, dtype=bool)
+        self.I = np.full(shape=(self.batch, self.n_j, 2), fill_value=0, dtype=bool)
 
-        self.LBs = np.zeros((self.batch,self.n_j,2), dtype=np.single)
+        self.LBs = np.zeros((self.batch, self.n_j, 2), dtype=np.single)
 
-        self.Fi = np.zeros((self.batch,self.n_j,2), dtype=np.single)
+        self.Fi = np.zeros((self.batch, self.n_j, 2), dtype=np.single)
 
         self.LBm = np.zeros((self.batch, self.n_j, 1), dtype=np.single)
 
@@ -85,24 +87,20 @@ class CLOUD_edge(gym.Env, EzPickle):
 
                 self.Fi[i][j][1] = self.T[i][j] - self.LBs[i][j][1]
 
-                self.LBm[i][j][0] = min(self.LBs[i][j][0],self.LBs[i][j][1])
+                self.LBm[i][j][0] = min(self.LBs[i][j][0], self.LBs[i][j][1])
 
                 self.Fim[i][j][0] = self.Fi[i][j][1]
-
-
-
 
         task_feas = np.concatenate((self.LBm.reshape(self.batch, self.n_j, 1),
                                     self.Fim.reshape(self.batch, self.n_j, 1),
                                     self.task_mask.reshape(self.batch, self.n_j, 1),
 
-                                   )
-                                   , axis=2)
+                                    ), axis=2)
 
         # print(self.I[0])
-        return task_feas,self.task_mask, self.place_time
+        return task_feas, self.task_mask, self.place_time
 
-    def step(self,task_action,p_action):
+    def step(self, task_action, p_action):
         """Update features based on the actions of the agents"""
         for i in range(self.batch):
             if p_action[i] == 1:
@@ -129,7 +127,7 @@ class CLOUD_edge(gym.Env, EzPickle):
 
         # print(p_action[0])
         # print('reward',reward[0])
-        earlist_time = np.zeros((self.batch,1))
+        earlist_time = np.zeros((self.batch, 1))
         for i in range(self.batch):
             earlist_time[i] = min(self.job_finish_time_on_cloudy[i])
         # print(earlist_time[0])
@@ -141,7 +139,7 @@ class CLOUD_edge(gym.Env, EzPickle):
             self.I[i][task_action[i]][1] = True
 
         for b in range(self.batch):
-            self.task_mask[b][task_action[b]] = True  ##已调度任务mask
+            self.task_mask[b][task_action[b]] = True  # 已调度任务mask
 
         for i in range(self.batch):
             for j in range(self.n_j):
@@ -160,7 +158,7 @@ class CLOUD_edge(gym.Env, EzPickle):
 
                     self.Fi[i][j][0] = self.T[i][j] - self.LBs[i][j][0]
 
-                    ##CLOUD
+                    # CLOUD
                     jobreadytime_a_C = self.dur_s[i][j]
 
                     compute_readytime_a_C = min(self.job_finish_time_on_cloudy[i])
@@ -173,26 +171,21 @@ class CLOUD_edge(gym.Env, EzPickle):
 
                     self.Fi[i][j][1] = self.T[i][j] - self.LBs[i][j][1]
 
-                    self.LBm[i][j][0] = min(self.LBs[i][j][0],self.LBs[i][j][1])
+                    self.LBm[i][j][0] = min(self.LBs[i][j][0], self.LBs[i][j][1])
 
                     self.Fim[i][j][0] = self.Fi[i][j][1]
-
-
-
 
         task_feas = np.concatenate((self.LBm.reshape(self.batch, self.n_j, 1),
                                     self.Fim.reshape(self.batch, self.n_j, 1),
                                     self.task_mask.reshape(self.batch, self.n_j, 1),
 
-                                    )
-                                   , axis=2)
+                                    ), axis=2)
 
         # print('LBs',self.LBs[0])
         # print('F',self.Fi[0])
 
-
         # print(self.task_mask[0])
-        return task_feas, self.task_mask, self.place_time,reward
+        return task_feas, self.task_mask, self.place_time, reward
 
 
 """test"""
@@ -221,4 +214,3 @@ class CLOUD_edge(gym.Env, EzPickle):
 # for i in range(10):
 #
 #     task_feas, task_mask, place_time, reward = env.step(task[i].reshape(24), place[i].reshape(24))
-

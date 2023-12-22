@@ -1,11 +1,10 @@
-from Params import configs
-
-import torch
 import os
+
 import numpy as np
-from act_critic import actor_critic
+import torch
 
-
+from model.act_critic import actor_critic
+from Params import configs
 
 """The main function of model training"""
 

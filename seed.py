@@ -1,10 +1,13 @@
 import numpy as np
-import numpy as np
-from Params import configs
-# from seed import seed
 
 from Datageneration import data
+from Params import configs
+
+# from seed import seed
+
 """This part is used to generate the training set, test set and verification set required for model training."""
+
+
 def traindata():
     """Generate a training dataset for model training"""
     datas = datatestdatas = data(configs.fil,
@@ -34,6 +37,7 @@ def traindata():
     # print(datas)
 
     np.save('datas{}_1000_2000.npy'.format(configs.n_j), datas)
+
 
 def data2():
     """Generate a test dataset for model training"""
@@ -86,8 +90,6 @@ def data3():
 
     # np.save('com_testdatas13_1000_2000.npy', testdatas)
     np.save('com_testdatas{}_1000_2000.npy'.format(configs.n_j), testdatas)
-
-
 
 
 np.random.seed(11)
