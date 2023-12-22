@@ -1,10 +1,12 @@
-from act_critic import actor_critic
-import sys
-import importlib
-from Params import configs
-import torch
-import numpy as np
 import datetime
+import importlib
+import sys
+
+import numpy as np
+import torch
+
+from act_critic import actor_critic
+from Params import configs
 
 """Load the trained model for testing"""
 
@@ -15,7 +17,7 @@ else:
 
 print(DEVICE)
 
-starttime =  datetime.datetime.now()
+starttime = datetime.datetime.now()
 
 compare = 1
 
@@ -24,17 +26,17 @@ maxtask = configs.maxtask
 size = '1000_2000'
 
 net1 = actor_critic(batch=configs.batch,
-                    hidden_dim = configs.hidden_dim,
+                    hidden_dim=configs.hidden_dim,
                     M=8,
                     device=configs.device).to(DEVICE)
 
-testdatas = np.load('data2//{}//compare{}//com_testdatas{}_{}.npy'.format(configs.n_j,compare,configs.n_j,size))
+testdatas = np.load('data2//{}//compare{}//com_testdatas{}_{}.npy'.format(configs.n_j, compare, configs.n_j, size))
 
 print(testdatas.shape)
 
 length = torch.zeros(1).to(DEVICE)
 
-path = './train_process/{}/compare{}/actor{}_mutil_actor.pt'.format(configs.n_j,compare,configs.n_j)
+path = './train_process/{}/compare{}/actor{}_mutil_actor.pt'.format(configs.n_j, compare, configs.n_j)
 
 net1.load_state_dict(torch.load(path, DEVICE))
 
@@ -56,7 +58,7 @@ with torch.no_grad():
 
         print(r)
 
-    length = length / configs.comtesttime  ##avg
+    length = length / configs.comtesttime  # avg
 
     print('time_delay =', length)
 
