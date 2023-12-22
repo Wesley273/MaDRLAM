@@ -3,8 +3,6 @@ import numpy as np
 import torch
 from gym.utils import EzPickle
 
-from Params import configs
-
 if torch.cuda.is_available():
     DEVICE = torch.device('cuda')
 else:

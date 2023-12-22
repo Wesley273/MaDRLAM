@@ -1,11 +1,9 @@
-import random
-import time
 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from Params import configs
+from config import configs
 
 """The encoder based on Transformer's multi-head attention layer"""
 
@@ -14,9 +12,12 @@ if torch.cuda.is_available():
 else:
     DEVICE = torch.device('cpu')
 # DEVICE = torch.device('cuda')
+
+
 class MHA(nn.Module):
     """multi-head attention layer"""
-    def __init__(self,embedding_size,M):
+
+    def __init__(self, embedding_size, M):
         super().__init__()
 
         self.embedding_size = embedding_size
@@ -80,7 +81,7 @@ class MHA(nn.Module):
 
         x = torch.unsqueeze(x, dim=4)
 
-        x = x.expand(batch, city_size, city_size, self.M, configs.hidden_dim//self.M)
+        x = x.expand(batch, city_size, city_size, self.M, configs.hidden_dim // self.M)
 
         x = x.contiguous()  #
 
@@ -95,7 +96,7 @@ class MHA(nn.Module):
         x = x + x_p
 
         #####################
-        ###BN
+        # BN
         x = x.permute(0, 2, 1)
 
         x = self.BN11(x)
@@ -104,7 +105,7 @@ class MHA(nn.Module):
         #####################
         x1 = self.FFw1(x)
 
-        x1 = F.relu(x1,inplace=True)
+        x1 = F.relu(x1, inplace=True)
 
         x1 = self.FFb1(x1)
 
@@ -119,17 +120,18 @@ class MHA(nn.Module):
 
         return x
 
+
 class Encoder1(nn.Module):
-    def __init__(self,Inputdim,embedding_size,M):
+    def __init__(self, Inputdim, embedding_size, M):
         super().__init__()
 
         self.embedding = nn.Linear(Inputdim, embedding_size)
 
         self.embedding_node = embedding_size
 
-        self.MHA = MHA(embedding_size,M)
+        self.MHA = MHA(embedding_size, M)
 
-    def forward(self,node):
+    def forward(self, node):
         # print(node.shape)
         node = torch.from_numpy(node).to(DEVICE)
 
@@ -146,19 +148,20 @@ class Encoder1(nn.Module):
 
         avg = torch.mean(x, dim=1)
 
-        return x,avg
+        return x, avg
+
 
 class Encoder(nn.Module):
-    def __init__(self,Inputdim,embedding_size,M):
+    def __init__(self, Inputdim, embedding_size, M):
         super().__init__()
 
         self.embedding = nn.Linear(Inputdim, embedding_size)
 
         self.embedding_node = embedding_size
 
-        self.MHA = MHA(embedding_size,M)
+        self.MHA = MHA(embedding_size, M)
 
-    def forward(self,node):
+    def forward(self, node):
 
         node = self.embedding(node)
         # print(node.shape)
@@ -174,6 +177,4 @@ class Encoder(nn.Module):
 
         avg = torch.mean(x, dim=1)
 
-        return x,avg
-
-
+        return x, avg

@@ -3,8 +3,8 @@ import os
 import numpy as np
 import torch
 
+from config import configs
 from model.act_critic import actor_critic
-from Params import configs
 
 """The main function of model training"""
 
@@ -20,21 +20,21 @@ size = '1000_2000'
 
 """Load training data and test data"""
 
-datas = np.load('data2//{}//compare{}//datas{}_{}.npy'.format(configs.n_j,compare,configs.n_j,size))
+datas = np.load('data2//{}//compare{}//datas{}_{}.npy'.format(configs.n_j, compare, configs.n_j, size))
 
 datas.astype('float16')
 
 print(datas.dtype)
 
-testdatas = np.load('data2//{}//compare{}//com_testdatas{}_{}.npy'.format(configs.n_j,compare,configs.n_j,size))
+testdatas = np.load('data2//{}//compare{}//com_testdatas{}_{}.npy'.format(configs.n_j, compare, configs.n_j, size))
 
 Net1 = actor_critic(batch=configs.batch,
-                    hidden_dim = configs.hidden_dim,
+                    hidden_dim=configs.hidden_dim,
                     M=8,
                     device=configs.device).to(DEVICE)
 
 Net2 = actor_critic(batch=configs.batch,
-                    hidden_dim = configs.hidden_dim,
+                    hidden_dim=configs.hidden_dim,
                     M=8,
                     device=configs.device).to(DEVICE)
 
@@ -45,7 +45,7 @@ min = 50000000000
 
 if configs.batch == 24:
     lr = 0.000001
-    print('lr=',lr)
+    print('lr=', lr)
 
 elif configs.batch == 8:
     lr = 0.0000001
@@ -53,7 +53,7 @@ elif configs.batch == 8:
 
 bl_alpha = 0.05
 
-output_dir = 'train_process//{}//compare{}'.format(configs.n_j,compare)##
+output_dir = 'train_process//{}//compare{}'.format(configs.n_j, compare)
 
 save_dir = os.path.join(os.getcwd(), output_dir)
 
@@ -68,17 +68,17 @@ for epoch in range(configs.epochs):
         data = datas[i]
         # print(data.shape)
 
-        task_seq,p_seq, task_action_pro, p_action_pro, reward1 = Net1(data, 1)
+        task_seq, p_seq, task_action_pro, p_action_pro, reward1 = Net1(data, 1)
 
-        _,_,_,_,reward2 = Net2(data, 1)
+        _, _, _, _, reward2 = Net2(data, 1)
 
         reward1 = reward1.detach()
 
         torch.cuda.empty_cache()
 
-        Net1.updata(task_action_pro, reward1, reward2,lr)
+        Net1.updata(task_action_pro, reward1, reward2, lr)
 
-        Net1.updata2(p_action_pro, reward1, reward2,lr)
+        Net1.updata2(p_action_pro, reward1, reward2, lr)
 
         print('epoch={},i={},time1={},time2={}'.format(epoch, i, torch.mean(reward1),
                                                        torch.mean(reward2)))
@@ -109,11 +109,11 @@ for epoch in range(configs.epochs):
                 for j in range(configs.comtesttime):
                     torch.cuda.empty_cache()
 
-                    _,_, _, _, r = Net1(testdatas[j], 0)
+                    _, _, _, _, r = Net1(testdatas[j], 0)
 
                     length = length + torch.mean(r)
 
-                length = length / configs.comtesttime  ##
+                length = length / configs.comtesttime
 
                 if length < min:
                     torch.save(Net1.state_dict(), os.path.join(save_dir,
@@ -124,7 +124,7 @@ for epoch in range(configs.epochs):
                                                                'actor{}_mutil_actor.pt'.format(configs.n_j)))
 
                     min = length
-                file_writing_obj1 = open('./train_vali/{}//compare{}//{}_{}.txt'.format(configs.n_j, compare,configs.n_j,configs.maxtask),
+                file_writing_obj1 = open('./train_vali/{}//compare{}//{}_{}.txt'.format(configs.n_j, compare, configs.n_j, configs.maxtask),
                                          'a')
 
                 file_writing_obj1.writelines(str(length) + '\n')

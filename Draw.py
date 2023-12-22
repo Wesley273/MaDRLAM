@@ -3,7 +3,7 @@ import re
 import matplotlib.pyplot as plt
 import numpy as np
 
-from Params import configs
+from config import configs
 
 """Draw the convergence curve of the model based on the data saved during the training process"""
 

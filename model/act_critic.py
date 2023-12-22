@@ -2,13 +2,13 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from agent_utils import (greedy_select_action, sample_select_action,
+                               select_action)
+from ceenv import CLOUD_edge
 from torch import optim
 
-from agent_utils import (greedy_select_action, sample_select_action,
-                         select_action)
-from ceenv import CLOUD_edge
-from Params import configs
-from model.transformer import Encoder, Encoder1
+from config import configs
+from model.transformer import Encoder1
 
 if torch.cuda.is_available():
     DEVICE = torch.device('cuda')
