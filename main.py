@@ -28,15 +28,9 @@ print(datas.dtype)
 
 testdatas = np.load('data2//{}//compare{}//com_testdatas{}_{}.npy'.format(configs.n_j, compare, configs.n_j, size))
 
-Net1 = actor_critic(batch=configs.batch,
-                    hidden_dim=configs.hidden_dim,
-                    M=8,
-                    device=configs.device).to(DEVICE)
+Net1 = actor_critic(batch=configs.batch, hidden_dim=configs.hidden_dim, M=8, device=configs.device).to(DEVICE)
 
-Net2 = actor_critic(batch=configs.batch,
-                    hidden_dim=configs.hidden_dim,
-                    M=8,
-                    device=configs.device).to(DEVICE)
+Net2 = actor_critic(batch=configs.batch, hidden_dim=configs.hidden_dim, M=8, device=configs.device).to(DEVICE)
 
 Net2.place_actor.load_state_dict(Net1.place_actor.state_dict())
 
@@ -68,26 +62,26 @@ for epoch in range(configs.epochs):
         data = datas[i]
         # print(data.shape)
 
-        task_seq, place_seq, task_action_probability, place_action_probability, reward1 = Net1(data, 1)
+        task_seq, place_seq, task_action_probability, place_action_probability, reward_task = Net1(data, 1)
 
-        _, _, _, _, reward2 = Net2(data, 1)
+        _, _, _, _, reward_place = Net2(data, 1)
 
-        reward1 = reward1.detach()
+        reward_task = reward_task.detach()
 
         torch.cuda.empty_cache()
 
-        Net1.update_task(task_action_probability, reward1, reward2, lr)
+        Net1.update_task(task_action_probability, reward_task, reward_place, lr)
 
-        Net1.update_place(place_action_probability, reward1, reward2, lr)
+        Net1.update_place(place_action_probability, reward_task, reward_place, lr)
 
-        print('epoch={},i={},time1={},time2={}'.format(epoch, i, torch.mean(reward1), torch.mean(reward2)))
+        print('epoch={},i={},time1={},time2={}'.format(epoch, i, torch.mean(reward_task), torch.mean(reward_place)))
 
         with torch.no_grad():
 
-            if (reward1.mean() - reward2.mean()) < 0:
+            if (reward_task.mean() - reward_place.mean()) < 0:
 
                 # 如果小于0，则进行统计检验（t检验）和基线更新
-                tt, pp = ttest_rel(reward1.cpu().numpy(), reward2.cpu().numpy())
+                tt, pp = ttest_rel(reward_task.cpu().numpy(), reward_place.cpu().numpy())
 
                 p_val = pp / 2
 
