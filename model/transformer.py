@@ -121,7 +121,7 @@ class MHA(nn.Module):
         return x
 
 
-class Encoder1(nn.Module):
+class Encoder(nn.Module):
     def __init__(self, Inputdim, embedding_size, M):
         super().__init__()
 
@@ -150,31 +150,3 @@ class Encoder1(nn.Module):
 
         return x, avg
 
-
-class Encoder(nn.Module):
-    def __init__(self, Inputdim, embedding_size, M):
-        super().__init__()
-
-        self.embedding = nn.Linear(Inputdim, embedding_size)
-
-        self.embedding_node = embedding_size
-
-        self.MHA = MHA(embedding_size, M)
-
-    def forward(self, node):
-
-        node = self.embedding(node)
-        # print(node.shape)
-        for i in range(3):
-
-            x = self.MHA(node)
-
-            node = x
-
-        x = node
-
-        x = x.contiguous()
-
-        avg = torch.mean(x, dim=1)
-
-        return x, avg

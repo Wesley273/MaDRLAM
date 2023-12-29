@@ -8,14 +8,16 @@ from agent_utils import (greedy_select_action, sample_select_action,
                          select_action)
 from cloudedge_env import CloudEdge
 from config import configs
-from model.transformer import Encoder1
+from model.transformer import Encoder
 
 if torch.cuda.is_available():
     DEVICE = torch.device('cuda')
 else:
     DEVICE = torch.device('cpu')
 
-"""This part covers the two agents proposed in the article (Task Selection Agent and Computing Node Selection Agent"""
+"""
+This part covers the two agents proposed in the article (Task Selection Agent and Computing Node Selection Agent
+"""
 
 
 class task_actor(nn.Module):
@@ -33,9 +35,7 @@ class task_actor(nn.Module):
 
         self.hidden_dim = hidden_dim
 
-        self.task_encoder = Encoder1(Inputdim=configs.input_dim1,
-                                     embedding_size=configs.hidden_dim,
-                                     M=M).to(DEVICE)
+        self.task_encoder = Encoder(Inputdim=configs.input_dim1, embedding_size=configs.hidden_dim, M=M).to(DEVICE)
 
         self.batch = batch
 
@@ -124,8 +124,10 @@ class task_actor(nn.Module):
 
 
 class place_actor(nn.Module):
-    """Computing Node Selection Agent
-        Output an action and the probability corresponding to the action at each scheduling step"""
+    """
+    Computing Node Selection Agent
+    Output an action and the probability corresponding to the action at each scheduling step
+    """
 
     def __init__(self, batch, hidden_dim, M,):
         super().__init__()
@@ -134,9 +136,7 @@ class place_actor(nn.Module):
 
         self.hidden_dim = hidden_dim
 
-        self.p_encoder = Encoder1(Inputdim=configs.input_dim2,
-                                  embedding_size=hidden_dim,
-                                  M=M).to(DEVICE)
+        self.p_encoder = Encoder(Inputdim=configs.input_dim2, embedding_size=hidden_dim, M=M).to(DEVICE)
 
         self.batch = batch
 
@@ -212,11 +212,7 @@ class place_actor(nn.Module):
 class actor_critic(nn.Module):
     """Two agents work together to obtain scheduling results"""
 
-    def __init__(self,
-                 batch,
-                 hidden_dim,
-                 M,
-                 device):
+    def __init__(self, batch, hidden_dim, M, device):
 
         super().__init__()
 
@@ -226,9 +222,9 @@ class actor_critic(nn.Module):
 
         self.env = CloudEdge(n_j=configs.n_j, maxtasks=configs.maxtask, max_Mem=configs.Mem)
 
-        self.actor1 = task_actor(batch=batch, hidden_dim=hidden_dim, M=M)
+        self.task_actor = task_actor(batch=batch, hidden_dim=hidden_dim, M=M)
 
-        self.actor2 = place_actor(batch=batch, hidden_dim=hidden_dim, M=M)
+        self.place_actor = place_actor(batch=batch, hidden_dim=hidden_dim, M=M)
 
         self.batch = batch
 
@@ -252,13 +248,13 @@ class actor_critic(nn.Module):
 
             index = i
 
-            task_operation, action_probability, process_time = self.actor1(data, index, task_feasibility, task_mask, action_probability, train)  # 选择任务
+            task_operation, action_probability, process_time = self.task_actor(data, index, task_feasibility, task_mask, action_probability, train)  # 选择任务
 
             ind = torch.unsqueeze(task_operation, 1).tolist()
 
             task_seq_list.append(task_operation)
 
-            place_operation, place_action_probability = self.actor2(index, task_operation, place_action_probability, place_time, process_time, train)
+            place_operation, place_action_probability = self.place_actor(index, task_operation, place_action_probability, place_time, process_time, train)
 
             place_operation_list.append(place_operation)
 
@@ -288,13 +284,13 @@ class actor_critic(nn.Module):
 
         return task_seq, place_seq, task_action_probability, place_action_probability, rewards
 
-    def update(self, task_action_pro, reward1, q, lr):
+    def update_task(self, task_action_probability, reward1, q, lr):
 
-        opt = optim.Adam(self.actor1.parameters(), lr)
+        opt = optim.Adam(self.task_actor.parameters(), lr)
 
-        pro = torch.log(task_action_pro)
+        probability = torch.log(task_action_probability)
 
-        loss = torch.sum(pro, dim=1)
+        loss = torch.sum(probability, dim=1).to(DEVICE)
 
         score = reward1 - q
 
@@ -308,13 +304,13 @@ class actor_critic(nn.Module):
         loss.backward()
         opt.step()
 
-    def update2(self, place_action_pro, reward1, q, lr):
+    def update_place(self, place_action_probability, reward1, q, lr):
 
-        opt = optim.Adam(self.actor2.parameters(), lr)
+        opt = optim.Adam(self.place_actor.parameters(), lr)
 
-        pro = torch.log(place_action_pro)
+        probability = torch.log(place_action_probability)
 
-        loss = torch.sum(pro, dim=1).to(DEVICE)
+        loss = torch.sum(probability, dim=1).to(DEVICE)
 
         score = reward1 - q
 

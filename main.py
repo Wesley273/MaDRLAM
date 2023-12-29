@@ -38,7 +38,7 @@ Net2 = actor_critic(batch=configs.batch,
                     M=8,
                     device=configs.device).to(DEVICE)
 
-Net2.actor2.load_state_dict(Net1.actor2.state_dict())
+Net2.place_actor.load_state_dict(Net1.place_actor.state_dict())
 
 min = 50000000000
 
@@ -76,19 +76,17 @@ for epoch in range(configs.epochs):
 
         torch.cuda.empty_cache()
 
-        Net1.update(task_action_probability, reward1, reward2, lr)
+        Net1.update_task(task_action_probability, reward1, reward2, lr)
 
-        Net1.update2(place_action_probability, reward1, reward2, lr)
+        Net1.update_place(place_action_probability, reward1, reward2, lr)
 
-        print('epoch={},i={},time1={},time2={}'.format(epoch, i, torch.mean(reward1),
-                                                       torch.mean(reward2)))
-        reward1 = reward1
+        print('epoch={},i={},time1={},time2={}'.format(epoch, i, torch.mean(reward1), torch.mean(reward2)))
 
         with torch.no_grad():
 
             if (reward1.mean() - reward2.mean()) < 0:
-                # 如果小于0，则进行统计检验（t检验）和基线更新
 
+                # 如果小于0，则进行统计检验（t检验）和基线更新
                 tt, pp = ttest_rel(reward1.cpu().numpy(), reward2.cpu().numpy())
 
                 p_val = pp / 2
@@ -117,16 +115,12 @@ for epoch in range(configs.epochs):
                 length = length / configs.comtesttime
 
                 if length < min:
-                    torch.save(Net1.state_dict(), os.path.join(save_dir,
-                                                               'epoch{}-i{}-dis_{:.5f}.pt'.format(
-                                                                   epoch, i, length.item())))
+                    torch.save(Net1.state_dict(), os.path.join(save_dir, 'epoch{}-i{}-dis_{:.5f}.pt'.format(epoch, i, length.item())))
 
-                    torch.save(Net1.state_dict(), os.path.join(save_dir,
-                                                               'actor{}_mutil_actor.pt'.format(configs.n_j)))
+                    torch.save(Net1.state_dict(), os.path.join(save_dir, 'actor{}_mutil_actor.pt'.format(configs.n_j)))
 
                     min = length
-                file_writing_obj1 = open('./train_vali/{}//compare{}//{}_{}.txt'.format(configs.n_j, compare, configs.n_j, configs.maxtask),
-                                         'a')
+                file_writing_obj1 = open('./train_vali/{}//compare{}//{}_{}.txt'.format(configs.n_j, compare, configs.n_j, configs.maxtask), 'a')
 
                 file_writing_obj1.writelines(str(length) + '\n')
 
