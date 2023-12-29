@@ -15,13 +15,13 @@ class CLOUD_edge(gym.Env, EzPickle):
     def __init__(self,
                  n_j,
                  maxtasks,
-                 max_Men):
+                 max_Mem):
         EzPickle.__init__(self)
         self.maxtasks = maxtasks
 
         self.n_j = n_j
 
-        self.maxMen = max_Men
+        self.maxMem = max_Mem
 
         self.step_count = 0
 

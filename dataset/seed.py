@@ -1,5 +1,5 @@
 import numpy as np
-from Datageneration import data
+from data_generation import data
 
 from config import configs
 

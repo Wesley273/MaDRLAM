@@ -68,7 +68,7 @@ for epoch in range(configs.epochs):
         data = datas[i]
         # print(data.shape)
 
-        task_seq, p_seq, task_action_pro, p_action_pro, reward1 = Net1(data, 1)
+        task_seq, place_seq, task_action_pro, p_action_pro, reward1 = Net1(data, 1)
 
         _, _, _, _, reward2 = Net2(data, 1)
 

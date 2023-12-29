@@ -30,7 +30,7 @@ parser.add_argument('--p', type=int, default=100, help='The transmit power of th
 
 parser.add_argument('--w', type=int, default=0.000000001, help='the variance of complex white Gaussian channel noise')
 
-parser.add_argument('--Men', type=int, default=100000, help='Menmory')
+parser.add_argument('--Mem', type=int, default=100000, help='Memory')
 
 parser.add_argument('--sita', type=int, default=4.0, help='the path-loss exponent')
 

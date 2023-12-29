@@ -3,7 +3,7 @@ import numpy as np
 """Generate relevant data according to the parameters in the paper"""
 
 
-def Datageneration(time, batch, n):
+def data_generation(time, batch, n):
     """Randomly generate the datasize, deadline, cloud and edge distance of the computing task."""
 
     data_size = np.random.randint(1000, 2000, (time * batch, 1, n))
@@ -48,7 +48,7 @@ def getdata(n_j, fill, fie, ci, B, p, w, sita, time, batch):
     tis = []
     vs = []
 
-    taskdata = Datageneration(time, batch, n_j)
+    taskdata = data_generation(time, batch, n_j)
 
     datasize = taskdata[0]
 
@@ -96,19 +96,22 @@ def data(fil, fie, ci, B, p, w, sita, time, batch, n_j):
 
     return datasizes, Ts, tils, ties, tiss
 
-# Datageneration(2,3,20)
-# a = data(fil=1,fie=10,ci=500,B=2,p=100,w=0.000000001,sita=4.0,time=3,batch=2,n_j=20,seed = 11)
-# a = np.array(a)
-# print(a[4].shape)
-# ds = a[0].reshape((3,2,10))
-# # print(ds)
-# T = a[1].reshape((3,2,10))
-# # print(T)
-# data = np.concatenate((ds,T),axis=1)
-# data = data.reshape(3,2,2,10)
-# print('data',data,data.shape)
-# a = np.array(a)
-# a = a.reshape((3,-1,2,10))
-# print(a[2])
 
-# Datageneration(time=3,batch=2,n=10)
+if __name__ == '__main__':
+    # Datageneration(2,3,20)
+    # a = data(fil=1,fie=10,ci=500,B=2,p=100,w=0.000000001,sita=4.0,time=3,batch=2,n_j=20,seed = 11)
+    # a = np.array(a)
+    # print(a[4].shape)
+    # ds = a[0].reshape((3,2,10))
+    # # print(ds)
+    # T = a[1].reshape((3,2,10))
+    # # print(T)
+    # data = np.concatenate((ds,T),axis=1)
+    # data = data.reshape(3,2,2,10)
+    # print('data',data,data.shape)
+    # a = np.array(a)
+    # a = a.reshape((3,-1,2,10))
+    # print(a[2])
+
+    # Datageneration(time=3,batch=2,n=10)
+    pass

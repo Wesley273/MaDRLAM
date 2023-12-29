@@ -228,7 +228,7 @@ class actor_critic(nn.Module):
 
         self.env = CLOUD_edge(n_j=configs.n_j,
                               maxtasks=configs.maxtask,
-                              max_Men=configs.Men)
+                              max_Mem=configs.Mem)
 
         self.actor1 = task_actor(batch=batch,
                                  hidden_dim=hidden_dim,
