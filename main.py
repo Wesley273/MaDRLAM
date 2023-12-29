@@ -68,7 +68,7 @@ for epoch in range(configs.epochs):
         data = datas[i]
         # print(data.shape)
 
-        task_seq, place_seq, task_action_pro, p_action_pro, reward1 = Net1(data, 1)
+        task_seq, place_seq, task_action_probability, place_action_probability, reward1 = Net1(data, 1)
 
         _, _, _, _, reward2 = Net2(data, 1)
 
@@ -76,9 +76,9 @@ for epoch in range(configs.epochs):
 
         torch.cuda.empty_cache()
 
-        Net1.updata(task_action_pro, reward1, reward2, lr)
+        Net1.update(task_action_probability, reward1, reward2, lr)
 
-        Net1.updata2(p_action_pro, reward1, reward2, lr)
+        Net1.update2(place_action_probability, reward1, reward2, lr)
 
         print('epoch={},i={},time1={},time2={}'.format(epoch, i, torch.mean(reward1),
                                                        torch.mean(reward2)))
@@ -87,6 +87,7 @@ for epoch in range(configs.epochs):
         with torch.no_grad():
 
             if (reward1.mean() - reward2.mean()) < 0:
+                # 如果小于0，则进行统计检验（t检验）和基线更新
 
                 tt, pp = ttest_rel(reward1.cpu().numpy(), reward2.cpu().numpy())
 

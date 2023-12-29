@@ -2,11 +2,11 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from agent_utils import (greedy_select_action, sample_select_action,
-                               select_action)
-from ceenv import CLOUD_edge
 from torch import optim
 
+from agent_utils import (greedy_select_action, sample_select_action,
+                         select_action)
+from cloudedge_env import CloudEdge
 from config import configs
 from model.transformer import Encoder1
 
@@ -19,8 +19,10 @@ else:
 
 
 class task_actor(nn.Module):
-    """Task Selection Agent;
-    Output an action and the probability corresponding to the action at each scheduling step."""
+    """
+    Task Selection Agent;
+    Output an action and the probability corresponding to the action at each scheduling step.
+    """
 
     def __init__(self,
                  batch,
@@ -49,7 +51,7 @@ class task_actor(nn.Module):
 
         self.k = nn.Linear(hidden_dim, hidden_dim)
 
-    def forward(self, data, index, feas, mask, action_pro, train):
+    def forward(self, data, index, feasibility, mask, action_probability, train):
 
         mask = torch.from_numpy(mask).to(DEVICE)
 
@@ -59,7 +61,7 @@ class task_actor(nn.Module):
 
         C = 10
 
-        nodes, grapha = self.task_encoder(feas)
+        nodes, grapha = self.task_encoder(feasibility)
 
         torch.cuda.empty_cache()
 
@@ -98,13 +100,13 @@ class task_actor(nn.Module):
         else:
             action_index = greedy_select_action(p)
 
-        action_pro[tag + index] = ppp[tag + action_index]  # wenti
+        action_probability[tag + index] = ppp[tag + action_index]  # wenti
 
-        dur_l = np.array(data[2], dtype=np.single)  # single  ##
+        dur_edge_execution = np.array(data[2], dtype=np.single)  # single  ##
 
-        dur_e = np.array(data[3], dtype=np.single)
+        dur_cloud_execution = np.array(data[3], dtype=np.single)
 
-        dur_s = np.array(data[4], dtype=np.single)
+        dur_sending = np.array(data[4], dtype=np.single)
 
         datasize = np.array(data[0], dtype=np.single)
 
@@ -114,22 +116,18 @@ class task_actor(nn.Module):
 
         for i in range(self.batch):
 
-            process_time[i][0] = dur_l[i][action_index[i]]
+            process_time[i][0] = dur_edge_execution[i][action_index[i]]
 
-            process_time[i][1] = dur_e[i][action_index[i]]
+            process_time[i][1] = dur_cloud_execution[i][action_index[i]]  # 这里为何不加dur_sending?
 
-        return action_index, action_pro, process_time  # (batch,1)
+        return action_index, action_probability, process_time  # (batch,1)
 
 
 class place_actor(nn.Module):
     """Computing Node Selection Agent
         Output an action and the probability corresponding to the action at each scheduling step"""
 
-    def __init__(self,
-                 batch,
-                 hidden_dim,
-                 M,
-                 ):
+    def __init__(self, batch, hidden_dim, M,):
         super().__init__()
 
         self.M = M
@@ -154,7 +152,7 @@ class place_actor(nn.Module):
 
         self.k = nn.Linear(hidden_dim, hidden_dim)
 
-    def forward(self, index, task_op, p_action_pro, place_time, process_time, train):
+    def forward(self, index, task_op, place_action_probability, place_time, process_time, train):
 
         p_feas = np.concatenate((place_time.reshape(self.batch, 2, 1),
                                 process_time.reshape(self.batch, 2, 1)), axis=2)
@@ -206,9 +204,9 @@ class place_actor(nn.Module):
         else:
             action_index = greedy_select_action(p)
 
-        p_action_pro[p_tag + index] = ppp[p_tag1 + action_index]
+        place_action_probability[p_tag + index] = ppp[p_tag1 + action_index]
 
-        return action_index, p_action_pro
+        return action_index, place_action_probability
 
 
 class actor_critic(nn.Module):
@@ -226,31 +224,25 @@ class actor_critic(nn.Module):
 
         self.hidden_dim = hidden_dim
 
-        self.env = CLOUD_edge(n_j=configs.n_j,
-                              maxtasks=configs.maxtask,
-                              max_Mem=configs.Mem)
+        self.env = CloudEdge(n_j=configs.n_j, maxtasks=configs.maxtask, max_Mem=configs.Mem)
 
-        self.actor1 = task_actor(batch=batch,
-                                 hidden_dim=hidden_dim,
-                                 M=M)
+        self.actor1 = task_actor(batch=batch, hidden_dim=hidden_dim, M=M)
 
-        self.actor2 = place_actor(batch=batch,
-                                  hidden_dim=hidden_dim,
-                                  M=M)
+        self.actor2 = place_actor(batch=batch, hidden_dim=hidden_dim, M=M)
 
         self.batch = batch
 
     def forward(self, data, train):
 
-        action_pro = torch.zeros(self.batch, configs.n_j).to(DEVICE).view(1, -1).squeeze().to(DEVICE)
+        action_probability = torch.zeros(self.batch, configs.n_j).to(DEVICE).view(1, -1).squeeze().to(DEVICE)
 
-        p_action_pro = torch.zeros(self.batch, configs.n_j).to(DEVICE).view(1, -1).squeeze().to(DEVICE)
+        place_action_probability = torch.zeros(self.batch, configs.n_j).to(DEVICE).view(1, -1).squeeze().to(DEVICE)
 
-        task_feas, task_mask, place_time = self.env.reset(self.batch, data)
+        task_feasibility, task_mask, place_time = self.env.reset(self.batch, data)
 
         task_seq_list = []
 
-        p_op_list = []
+        place_operation_list = []
 
         rewards = 0
 
@@ -260,43 +252,43 @@ class actor_critic(nn.Module):
 
             index = i
 
-            task_op, action_pro, process_time = self.actor1(data, index, task_feas, task_mask, action_pro, train)  # 选择任务
+            task_operation, action_probability, process_time = self.actor1(data, index, task_feasibility, task_mask, action_probability, train)  # 选择任务
 
-            ind = torch.unsqueeze(task_op, 1).tolist()
+            ind = torch.unsqueeze(task_operation, 1).tolist()
 
-            task_seq_list.append(task_op)
+            task_seq_list.append(task_operation)
 
-            p_op, p_action_pro = self.actor2(index, task_op, p_action_pro, place_time, process_time, train)
+            place_operation, place_action_probability = self.actor2(index, task_operation, place_action_probability, place_time, process_time, train)
 
-            p_op_list.append(p_op)
+            place_operation_list.append(place_operation)
 
-            task_feas, task_mask, place_time, reward = self.env.step(task_op, p_op)
+            task_feasibility, task_mask, place_time, reward = self.env.step(task_operation, place_operation)
 
             rewards += reward
 
-        p_action_pro = p_action_pro.view(self.batch, configs.n_j)  # (batch,n)
+        place_action_probability = place_action_probability.view(self.batch, configs.n_j)  # (batch,n)
 
-        task_action_pro = action_pro.view(self.batch, configs.n_j)  # (batch,n)！！！！！
+        task_action_probability = action_probability.view(self.batch, configs.n_j)  # (batch,n)！！！！！
 
         task_seq = torch.unsqueeze(task_seq_list[0], 1)
 
-        place_seq = torch.unsqueeze(p_op_list[0], 1)
+        place_seq = torch.unsqueeze(place_operation_list[0], 1)
 
         q = q.to(DEVICE)
 
         for i in range(configs.n_j - 1):
             task_seq = torch.cat([task_seq, torch.unsqueeze(task_seq_list[i + 1], 1)], dim=1)
         for i in range(configs.n_j - 1):
-            place_seq = torch.cat([place_seq, torch.unsqueeze(p_op_list[i + 1], 1)], dim=1)
+            place_seq = torch.cat([place_seq, torch.unsqueeze(place_operation_list[i + 1], 1)], dim=1)
         # print(task_seq[0])
 
         rewards = torch.from_numpy(rewards).to(DEVICE)
 
         rewards = rewards.to(torch.float32)
 
-        return task_seq, place_seq, task_action_pro, p_action_pro, rewards
+        return task_seq, place_seq, task_action_probability, place_action_probability, rewards
 
-    def updata(self, task_action_pro, reward1, q, lr):
+    def update(self, task_action_pro, reward1, q, lr):
 
         opt = optim.Adam(self.actor1.parameters(), lr)
 
@@ -316,11 +308,11 @@ class actor_critic(nn.Module):
         loss.backward()
         opt.step()
 
-    def updata2(self, p_action_pro, reward1, q, lr):
+    def update2(self, place_action_pro, reward1, q, lr):
 
         opt = optim.Adam(self.actor2.parameters(), lr)
 
-        pro = torch.log(p_action_pro)
+        pro = torch.log(place_action_pro)
 
         loss = torch.sum(pro, dim=1).to(DEVICE)
 
