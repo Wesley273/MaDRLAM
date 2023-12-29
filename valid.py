@@ -6,7 +6,7 @@ import numpy as np
 import torch
 
 from config import configs
-from model.act_critic import actor_critic
+from model.actor_critic import actor_critic
 
 """Load the trained model for testing"""
 
